@@ -1,5 +1,7 @@
 ---
 title:  "My first post"
+description: "This is a post to test posting"
+image: "http://www.postops.co/images/cover.jpg"
 date:   2016-06-24 20:54:23
 categories: [test]
 tags: [test,helloworld]
