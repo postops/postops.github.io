@@ -1,0 +1,38 @@
+# Site settings
+title: postops
+description: 'cat /dev/random > blog'
+url: 'http://postops.co'
+baseurl: '/'
+# google_analytics: 'UA-79833253-1'
+disqus_shortname: 'postops'
+
+author:
+  name: 'Jay Wallace'
+  twitter_username: mootpt
+  facebook_username: cantc
+  github_username:  mootpt
+  linkedin_username:  cantc
+
+defaults:
+  -
+    scope:
+      path: ''
+      type: 'posts'
+    values:
+        layout: 'post'
+
+# Build settings
+destination: _site
+paginate: 10
+permalink: /:year/:title/
+markdown: kramdown
+highlighter: rouge
+
+kramdown:
+  # use Github Flavored Markdown
+  input: GFM
+  # do not replace newlines by <br>s
+  hard_wrap: false
+
+gems: ['jekyll-paginate']
+exclude: ['README.md', 'Gemfile', 'Gemfile.lock', 'screenshot.png']
