@@ -10,27 +10,27 @@ tags: [terraform,packer,api,iot,botvac,cats]
 Natalie and I just recently moved into a new home and rather than move everything we decided it was about time to just up and replace most of our furniture. Along with some of the new furniture purchased, we agreed that we should invest in technology that would help automate our lives. It was quickly determined, that we both hate vacuuming. It doesn't take long for your floors to be covered in loose hair when you live with two cats and a dog, so we headed out to buy a robot vacuum the second day of living in the new home.
 
 ### The purchase
-After lots of discussion and comparing products, we decided to go with the Neato Botvac. We chose the Neato mostly because of it's square design (for corners), price point, and vacuuming power. We took it home, unboxed it, and got it all setup on our network.
+After lots of discussion and comparing products, we decided to go with the [Neato Botvac](https://amzn.com/B0168KHVZW). We chose the Neato mostly because of it's square design (it needed to reach corners), price point, and vacuuming power. We took it home, unboxed it, and got it all setup on our network.
 
 ![The Neato](/images/posts/botvac-post/botvac.jpg)
 
-It was beautiful. No more vacuuming. Well.. No more daily vacuuming. A serious vacuuming is due from time to time. I was excited to say the least. I even gave my vacuum the fitting name of "Jarvis". I am not a big Iron Man fan, but felt this thing was going to be about as transformative as Tony Stark's AI companion.
+It was beautiful. No more vacuuming. Well.. No more daily vacuuming. A serious vacuuming is due from time to time. I was excited to say the least. We even gave the vacuum the fitting name of "Jarvis". I am not a big Iron Man fan, but it felt fitting as this thing was going to be about as transformative as Tony Stark's AI companion.
 
 ![The real Jarvis](/images/posts/botvac-post/real-jarvis.jpg)
 
 ### One week in
-Jarvis was doing his job of keeping our home clean and the whole process began to feel a bit routine. Jarvis would fire up about 10 AM every morning, scare all the animals into my office, and leave the floors hair free after about an hour or so. I began to feel a bit bored with Jarvis and it started to feel as if Jarvis wasn't really living up to his name. Great. Vacuum runs at 10 AM, cleans floors, and goes to sleep. Surely Jarvis' life was meant for more greatness than this. I started looking around the house for potential problems Jarvis could solve. Bring me coffee? Yeah that wouldn't work. Any idea I came up with seemed super impractical and novel at best. Little did I know the problem was staring me straight in the face for several years.
+Jarvis was doing his job of keeping our home clean and the whole process began to feel a bit routine. Jarvis would fire up at 10 AM every morning, scare all the animals into my office, and leave the floors hair free after about an hour or so of work. I began to feel a bit bored with Jarvis and it started to feel as if Jarvis wasn't really living up to his name. Great. Vacuum runs at 10 AM, cleans floors, and goes to sleep. Surely Jarvis' life was meant for more greatness than this. I started looking around the house for potential problems Jarvis could solve. Bring me coffee? Yeah that wouldn't work. Any idea I came up with seemed super impractical and novel at best. Little did I know the problem was staring me straight in the face for several years.
 
 ### The Perpetrator
 ![Roly Poly](/images/posts/botvac-post/the-perpetrator.jpg)
-This is my cat, Roly Poly. Roly Poly hasn't always had the easy life. I found her on the streets several years back in Oklahoma City. Once we met, she immediately adopted me. She followed me pretty much everywhere and it wasn't long before she decided to move into my place. Poly is a sweet cat, don't get me wrong, but one of her favorite things to do is destroy things. Among the things she enjoys destroying, couches definitely tops the list. This was one of the main reasons, Natalie and I, decided to get new furniture when moving. Previously we stuck with cheaper couches from IKEA, as we knew Poly was going to tear it up in due time. When we moved into our first house, we went out and made a significant investment on a couch and made a pack that we would keep the animals away from the furniture.
+This is my cat, Roly Poly. Roly Poly hasn't always had the easy life. I found her on the streets several years back in Oklahoma City. Once we met, she immediately adopted me. She followed me pretty much everywhere and it wasn't long before she decided to move into my place. Poly is a sweet cat, don't get me wrong, but one of her favorite things to do is destroy stuff. Among the things she enjoys destroying, couches definitely top the list. This was one of the main reasons, Natalie and I, decided to get new furniture when moving. Previously we stuck with cheaper couches from IKEA, as we knew Poly was going to tear it up in due time. When we moved into our first house, we went out and made a significant investment on a couch and made a pack that we would keep the animals away from the furniture.
 
 It wasn't long before Poly noticed the couch.
 
 ![Poly laying on our new couch](/images/posts/botvac-post/this-has-gotta-stop.jpg)
 
 ### This had to stop
-I was determined to make sure Poly would not destroy the couch. I would pick her up and move her off every time she hopped on, tell her no when I saw her pulling her self across the floor anchored into the couch, and the whole thing began to get exhausting. Plus I could only keep an eye on her during my waking hours. At night, she had free reign with the couch, while I slept trying not to think about it.
+I was determined to make sure Poly would not destroy the couch. I would pick her up and move her off every time she hopped on, tell her no when I saw her pulling her self across the floor anchored into the couch, and the whole thing began to get exhausting. Plus I could only keep an eye on her during my waking hours. At night, she had free reign with the couch, while we slept trying not to think about it.
 
 Then it hit me! The animals hated Jarvis. Ever since we purchased Jarvis, the animals would run into the other room every time 10 AM rolled around and they heard him revving up his motor. Robots and cats do not exactly live in harmony. I decided to use this to my advantage and set out to use Jarvis to keep Poly off the couch.
 
@@ -73,7 +73,7 @@ $ curl http://localhost:9292/get_robot_state
 This was sufficient enough for working locally, but I opted to deploy to AWS.
 
 ### Taking a look at my deployment
-I opted to use Packer and Terraform to deploy my API to AWS. I will review each component in a bit more detail, but here's a quick overview of how that project is laid out:
+I decided to use Packer and Terraform to deploy my API to AWS. I will review each component in a bit more detail, but here's a quick overview of how the project is laid out:
 
 {% highlight plaintext %}
 ├── packer
@@ -97,7 +97,7 @@ I opted to use Packer and Terraform to deploy my API to AWS. I will review each 
 The repo in it's entirety is available at [mootpt/jarvis](https://github.com/mootpt/jarvis)
 
 ### Packer
-Let's first take a look at my [Packer template](https://github.com/mootpt/jarvis/blob/master/packer/jarvis.json). If you are not familiar with Packer, I highly recommend checking out the [tool](https://www.packer.io/). Essentially, I use Packer to build the AMI which will be used for my Botvac infrastructure. It's pretty straightforward for the most part, but I will take the time to walk through each block and the associated scripts.
+Let's first take a look at my [Packer template](https://github.com/mootpt/jarvis/blob/master/packer/jarvis.json). If you are not familiar with Packer, I highly recommend checking out the [tool](https://www.packer.io/). Essentially, I use Packer to build the AMI that's used for my Botvac infrastructure. It's pretty straightforward for the most part, but I will take the time to walk through each block and the associated scripts.
 
 The variables block:
 
