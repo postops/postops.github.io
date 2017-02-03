@@ -7,7 +7,7 @@ categories: [lambda, iot]
 tags: [lambda, serverless , fun, botvac, neato]
 ---
 
-Okay, so it's been some time since I have posted....
+Okay, so it's been some time since I posted my original article about controlling your neato botvac by creating Packer image and eventually deploying it using Terraform. Since my original post, I decided to throw out the whole Packer thing. It doesn't really make all that much sense to manage our own AMI for our Botvac. Instead, we can go the serverless route, while still taking advantage of Terraform. With a bit of Node.js, I was able to streamline the Botvac control process, while also utilizing the AWS API Gateway. In this post I am going to go through the Lambda function I created, how I deployed it and the AWS API Gateway using Terraform, and how I used the Maker service in IFTTT to start the Botvac in a particular area once a motion sensor is triggered. So let's get started.
 
 
 The Lambda Function:
