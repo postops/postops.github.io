@@ -2,14 +2,15 @@
 title: postops
 description: 'cat /dev/random > blog'
 url: 'http://postops.co'
-baseurl: '/'
+baseurl: ''
 # google_analytics: 'UA-79833253-1'
 disqus_shortname: 'postops'
 
 author:
   name: 'Jay Wallace'
   twitter_username: mootpt
-  facebook_username: cantc
+  # facebook_username: cantc
+  medium_username: postops
   github_username:  mootpt
   linkedin_username:  cantc
   keybase_username: nullpt
@@ -35,5 +36,5 @@ kramdown:
   # do not replace newlines by <br>s
   hard_wrap: false
 
-gems: ['jekyll-paginate','jekyll-gist']
+plugins: ['jekyll-paginate','jekyll-gist']
 exclude: ['README.md', 'Gemfile', 'Gemfile.lock', 'screenshot.png']
