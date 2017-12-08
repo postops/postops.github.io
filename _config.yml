@@ -1,9 +1,9 @@
 # Site settings
+title: postops
+description: 'cat /dev/random > blog'
+url: 'http://postops.co'
 site:
-  title: postops
-  description: 'cat /dev/random > blog'
-  url: 'http://postops.co'
-  baseurl: '/'
+  baseurl: 'http://postops.co/'
 # google_analytics: 'UA-79833253-1'
 disqus_shortname: 'postops'
 
