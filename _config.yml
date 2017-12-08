@@ -3,7 +3,7 @@ title: postops
 description: 'cat /dev/random > blog'
 url: 'http://postops.co'
 site:
-  baseurl: 'http://postops.co/'
+  baseurl: '/'
 # google_analytics: 'UA-79833253-1'
 disqus_shortname: 'postops'
 
