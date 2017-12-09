@@ -17,7 +17,7 @@ jobs:
           command: 'bundle install'
       - run:
           name: Jekyll Build
-          command: 'bundler exec jekyll build'
+          command: 'jekyll build'
 
 workflows:
   version: 2
