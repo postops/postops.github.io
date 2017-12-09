@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>postops</title>
+    <description>cat /dev/random &gt; blog</description>
+    <link>http://postops.co/</link>
+    <atom:link href="http://postops.co/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Sat, 09 Dec 2017 03:22:58 +0000</pubDate>
+    <lastBuildDate>Sat, 09 Dec 2017 03:22:58 +0000</lastBuildDate>
+    <generator>Jekyll v3.6.2</generator>
+    
+      <item>
+        <title>Managing the cat using lambda</title>
+        <description>&lt;p&gt;Okay, so it’s been some time since I posted my original article about controlling your neato botvac by creating Packer image and eventually deploying it using Terraform. Since my original post, I decided to throw out the whole Packer thing. It doesn’t really make all that much sense to manage our own AMI for our Botvac. Instead, we can go the serverless route, while still taking advantage of Terraform. With a bit of Node.js, I was able to streamline the Botvac control process, while also utilizing the AWS API Gateway. In this post I am going to go through the Lambda function I created, how I deployed it and the AWS API Gateway using Terraform, and how I used the Maker service in IFTTT to start the Botvac in a particular area once a motion sensor is triggered. So let’s get started.&lt;/p&gt;
+
+&lt;p&gt;The Lambda Function:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nx&quot;&gt;exports&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;handler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;email&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;email&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;password&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;botvac&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'node-botvac'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;botvac&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//authorize&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;authorize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;email&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;//get your robots&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getRobots&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;robots&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;robots&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+              &lt;span class=&quot;c1&quot;&gt;//do something&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;robots&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;startSpotCleaning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'100'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'100'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                 &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+              &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+</description>
+        <pubDate>Sat, 21 Jan 2017 21:06:56 +0000</pubDate>
+        <link>http://postops.co/2017/managing-the-cat-using-lambda/</link>
+        <guid isPermaLink="true">http://postops.co/2017/managing-the-cat-using-lambda/</guid>
+        
+        <category>lambda</category>
+        
+        <category>serverless</category>
+        
+        <category>fun</category>
+        
+        <category>botvac</category>
+        
+        <category>neato</category>
+        
+        
+        <category>lambda</category>
+        
+        <category>iot</category>
+        
+      </item>
+    
+      <item>
+        <title>Controlling your Neato Botvac with IFTTT - Part 1</title>
+        <description>&lt;p&gt;Natalie and I just recently moved into a new home and rather than move everything we decided it was about time to just up and replace most of our furniture. Along with some of the new furniture purchased, we agreed that we should invest in technology that would help automate our lives. It was quickly determined, that we both hate vacuuming. It doesn’t take long for your floors to be covered in loose hair when you live with two cats and a dog, so we headed out to buy a robot vacuum the second day of living in the new home.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-purchase&quot;&gt;The purchase&lt;/h3&gt;
+&lt;p&gt;After lots of discussion and comparing products, we decided to go with the &lt;a href=&quot;https://amzn.com/B0168KHVZW&quot;&gt;Neato Botvac&lt;/a&gt;. We chose the Neato mostly because of it’s square design (it needed to reach corners), price point, and vacuuming power. We took it home, unboxed it, and got it all setup on our network.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/botvac-post/botvac.jpg&quot; alt=&quot;The Neato&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It was beautiful. No more vacuuming. Well.. No more daily vacuuming. A serious vacuuming is due from time to time. I was excited to say the least. We even gave the vacuum the fitting name of “Jarvis”. I am not a big Iron Man fan, but it felt fitting as this thing was going to be about as transformative as Tony Stark’s AI companion.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/botvac-post/real-jarvis.jpg&quot; alt=&quot;The real Jarvis&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;one-week-in&quot;&gt;One week in&lt;/h3&gt;
+&lt;p&gt;Jarvis was doing his job of keeping our home clean and the whole process began to feel a bit routine. Jarvis would fire up at 10 AM every morning, scare all the animals into my office, and leave the floors hair free after about an hour or so of work. I began to feel a bit bored with Jarvis and it started to feel as if Jarvis wasn’t really living up to his name. Great. Vacuum runs at 10 AM, cleans floors, and goes to sleep. Surely Jarvis’ life was meant for more greatness than this. I started looking around the house for potential problems Jarvis could solve. Bring me coffee? Yeah that wouldn’t work. Any idea I came up with seemed super impractical and novel at best. Little did I know the problem was staring me straight in the face for several years.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-perpetrator&quot;&gt;The Perpetrator&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;/images/posts/botvac-post/the-perpetrator.jpg&quot; alt=&quot;Roly Poly&quot; /&gt;
+This is my cat, Roly Poly. Roly Poly hasn’t always had the easy life. I found her on the streets several years back in Oklahoma City. Once we met, she immediately adopted me. She followed me pretty much everywhere and it wasn’t long before she decided to move into my place. Poly is a sweet cat, don’t get me wrong, but one of her favorite things to do is destroy stuff. Among the things she enjoys destroying, couches definitely top the list. This was one of the main reasons, Natalie and I, decided to get new furniture when moving. Previously we stuck with cheaper couches from IKEA, as we knew Poly was going to tear it up in due time. When we moved into our first house, we went out and made a significant investment on a couch and made a pack that we would keep the animals away from the furniture.&lt;/p&gt;
+
+&lt;p&gt;It wasn’t long before Poly noticed the couch.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/botvac-post/this-has-gotta-stop.jpg&quot; alt=&quot;Poly laying on our new couch&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;this-had-to-stop&quot;&gt;This had to stop&lt;/h3&gt;
+&lt;p&gt;I was determined to make sure Poly would not destroy the couch. I would pick her up and move her off every time she hopped on, tell her no when I saw her pulling her self across the floor anchored into the couch, and the whole thing began to get exhausting. Plus I could only keep an eye on her during my waking hours. At night, she had free reign with the couch, while we slept trying not to think about it.&lt;/p&gt;
+
+&lt;p&gt;Then it hit me! The animals hated Jarvis. Ever since we purchased Jarvis, the animals would run into the other room every time 10 AM rolled around and they heard him revving up his motor. Robots and cats do not exactly live in harmony. I decided to use this to my advantage and set out to use Jarvis to keep Poly off the couch.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-problem&quot;&gt;The problem&lt;/h3&gt;
+&lt;p&gt;Out of the box, Neato Botvacs are only controllable via a smart phone or using some pre-defined schedule. Lame. I did some search, surely thinking this thing has some sort of publicly documented API. Sadly, it did not. If I was going to automate this thing, I knew the first thing I needed to be able to do, was control this thing outside of the app that Neato provided. While the Neato app is great for performing on-demand actions and scheduling, it provides pretty limited functionality outside of that:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/botvac-post/neato-screenshot.png&quot; alt=&quot;Neato App&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I knew there had to be a way to control this thing outside of the app and headed over to Github for some quick searching. Low and behold, someone figured it out. I stumbled up &lt;a href=&quot;https://github.com/kangguru/botvac&quot;&gt;kangguru/botvac&lt;/a&gt;, an “unofficial” API client for interacting with the Neato botvac. Awesome sauce! Essentially, this client, forwarded requests to Neato’s secret/undocumented API at &lt;a href=&quot;https://nucleo.neatocloud.com&quot;&gt;https://nucleo.neatocloud.com&lt;/a&gt; using the proper &lt;a href=&quot;https://github.com/kangguru/botvac/blob/master/cert/neatocloud.com.crt&quot;&gt;certificate&lt;/a&gt; and your Botvac’s Serial and Secret collected from &lt;a href=&quot;https://beehive.neatocloud.com/&quot;&gt;https://beehive.neatocloud.com/&lt;/a&gt; after authentication. For more information on how this works, I highly suggest digging through the repository yourself and taking a look. Thank you kangguru for reverse engineering this, so I didn’t have to.&lt;/p&gt;
+
+&lt;h3 id=&quot;getting-the-serial-and-secret&quot;&gt;Getting the Serial and Secret&lt;/h3&gt;
+&lt;p&gt;Following along with the repo’s README, the first step was getting my Botvac’s serial and secret. This was pretty straight-forward. First I installed the &lt;code class=&quot;highlighter-rouge&quot;&gt;botvac&lt;/code&gt; gem and used &lt;code class=&quot;highlighter-rouge&quot;&gt;botvac robots&lt;/code&gt; from the CLI to get the serial and secret. The email and password used is the same I used when setting up my Neato Botvac for the first time.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-console&quot; data-lang=&quot;console&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; gem install botvac
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; botvac robots
+&lt;span class=&quot;go&quot;&gt;
+Email: EmailHere
+Password: OnlyYouKnowThis
+
+&lt;/span&gt;&lt;span class=&quot;gp&quot;&gt;Robot (BotVacConnected) =&amp;gt;&lt;/span&gt; Serial: OPSXXXX-XXXXX Secret: XXXXXXXX&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;It’s important to make note of both the Serial and Secret.&lt;/p&gt;
+
+&lt;h3 id=&quot;running-locally-nah&quot;&gt;Running Locally? Nah.&lt;/h3&gt;
+&lt;p&gt;So at this point, I could run the web server locally and make API requests simply by hitting localhost, but I’d rather deploy it somewhere. This API needs to be publicly accessible for a number of reasons I will point out later. It’s worth noting, that using the setup I will go over, one essentially exposes the Botvac to any one who has the URL of the API.&lt;/p&gt;
+
+&lt;p&gt;For those who want to run locally, it’s just as easy as Cloning the repo, setting some env variables, starting the webserver, and making requests.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-console&quot; data-lang=&quot;console&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; git clone git@github.com:kangguru/botvac.git
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;botvac
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;SERIAL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;OPSXXXX-XXXXX
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;SECRET&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;XXXXXXXX
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; rackup &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'botvac/web'&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-b&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;run Botvac::Web.new&quot;&lt;/span&gt;
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; curl http://localhost:9292/get_robot_state&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This was sufficient enough for working locally, but I opted to deploy to AWS.&lt;/p&gt;
+
+&lt;h3 id=&quot;taking-a-look-at-my-deployment&quot;&gt;Taking a look at my deployment&lt;/h3&gt;
+&lt;p&gt;I decided to use Packer and Terraform to deploy my API to AWS. I will review each component in a bit more detail, but here’s a quick overview of how the project is laid out:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-plaintext&quot; data-lang=&quot;plaintext&quot;&gt;├── packer
+│   ├── jarvis.json
+│   └── scripts
+│       └── installer.sh
+├── shared
+│   ├── generate_key_pair.sh
+│   ├── main.tf
+│   └── ssh_keys
+│       ├── jarvis.pem
+│       └── jarvis.pub
+└── terraform
+    ├── firewalls.tf
+    ├── instances.tf
+    ├── keypairs.tf
+    ├── main.tf
+    └── networks.tf&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The repo in it’s entirety is available at &lt;a href=&quot;https://github.com/mootpt/jarvis&quot;&gt;mootpt/jarvis&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;packer&quot;&gt;Packer&lt;/h3&gt;
+&lt;p&gt;Let’s first take a look at my &lt;a href=&quot;https://github.com/mootpt/jarvis/blob/master/packer/jarvis.json&quot;&gt;Packer template&lt;/a&gt;. If you are not familiar with Packer, I highly recommend checking out the &lt;a href=&quot;https://www.packer.io/&quot;&gt;tool&lt;/a&gt;. Essentially, I use Packer to build the AMI that’s used for my Botvac infrastructure. It’s pretty straightforward for the most part, but I will take the time to walk through each block and the associated scripts.&lt;/p&gt;
+
+&lt;p&gt;The variables block:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-json&quot; data-lang=&quot;json&quot;&gt;&lt;span class=&quot;s2&quot;&gt;&quot;variables&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;aws_access_key&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{{env `AWS_ACCESS_KEY_ID`}}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;aws_secret_key&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{{env `AWS_SECRET_ACCESS_KEY`}}&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In the above code snippit, I have specified that there are a few variables that are important to my build. These variables will be pulled from my local environment variables and used throughout my build template. &lt;code class=&quot;highlighter-rouge&quot;&gt;AWS_ACCESS_KEY_ID&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;AWS_SECRET_ACCESS_KEY&lt;/code&gt; are used to access my AWS account to build and store the AMI.&lt;/p&gt;
+
+&lt;p&gt;I then set these environment variables:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-console&quot; data-lang=&quot;console&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;AWS_ACCESS_KEY_ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;AKIAIOSFODNN7EXAMPLE
+&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;AWS_SECRET_ACCESS_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The builders block:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-json&quot; data-lang=&quot;json&quot;&gt;&lt;span class=&quot;s2&quot;&gt;&quot;builders&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;amazon-ebs&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;access_key&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{{user `aws_access_key`}}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;secret_key&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{{user `aws_secret_key`}}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;region&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;us-east-1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;source_ami&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;ami-e0efab88&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;instance_type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;t2.micro&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;ssh_username&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;admin&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;ami_name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;jarvis {{timestamp}}&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In the above snippit, I have specified the &lt;code class=&quot;highlighter-rouge&quot;&gt;type&lt;/code&gt; of builder I want to use for creating my AMI, &lt;code class=&quot;highlighter-rouge&quot;&gt;amazon-ebs&lt;/code&gt;. The AWS builder requires both a &lt;code class=&quot;highlighter-rouge&quot;&gt;access_key&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;secret_key&lt;/code&gt;, which I am populating using the variables from the variables block. I have specified the &lt;code class=&quot;highlighter-rouge&quot;&gt;region&lt;/code&gt; for my build, &lt;code class=&quot;highlighter-rouge&quot;&gt;us-east-1&lt;/code&gt;, the &lt;code class=&quot;highlighter-rouge&quot;&gt;source_ami&lt;/code&gt; I wish to start with (&lt;em&gt;note: ami-e0efab88 is pretty much a vanilla Debian Wheezy image&lt;/em&gt;), the &lt;code class=&quot;highlighter-rouge&quot;&gt;instance_type&lt;/code&gt; or size I wish to use for my build, &lt;code class=&quot;highlighter-rouge&quot;&gt;t2.micro&lt;/code&gt;. I have also passed in the &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh_username&lt;/code&gt; for the box and provided an &lt;code class=&quot;highlighter-rouge&quot;&gt;ami_name&lt;/code&gt; for reference (&lt;em&gt;note: this is not the AMI name I use in Terraform&lt;/em&gt;).&lt;/p&gt;
+
+&lt;p&gt;The provisioners block:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-json&quot; data-lang=&quot;json&quot;&gt;&lt;span class=&quot;s2&quot;&gt;&quot;provisioners&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;shell&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;script&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;scripts/installer.sh&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In the above, I essentially tell the machine I want to run a shell script on the builder. The shell script is as follows:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt; update
+&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get install &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt; ruby rubygems rails
+&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;gem install botvac&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Essentially the script installs the &lt;code class=&quot;highlighter-rouge&quot;&gt;botvac&lt;/code&gt; gem and any necessary dependencies.&lt;/p&gt;
+
+&lt;p&gt;All that was left was for me to download Packer and build my template. Packer can be downloaded from the &lt;a href=&quot;https://www.packer.io/downloads.html&quot;&gt;Packer Downloads Page&lt;/a&gt; and added to your path. Once downloaded and added to my path, all that was left was to build the template.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-console&quot; data-lang=&quot;console&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$&lt;/span&gt; packer build jarvis.json&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;script type=&quot;text/javascript&quot; src=&quot;https://asciinema.org/a/86rsn9i5rp4qtseu6s414d61y.js&quot; id=&quot;asciicast-86rsn9i5rp4qtseu6s414d61y&quot; async=&quot;&quot;&gt;&lt;/script&gt;
+
+&lt;p&gt;With the brand new AMI built and stored, I was one step closer to keeping the cat off the couch. Join me next time, when I build some infrastructure using &lt;a href=&quot;https://www.terraform.io&quot;&gt;Terraform&lt;/a&gt; with my newly created AMI. I will then conclude this three part series with IFTTT magic and the end results.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 25 Jun 2016 12:22:52 +0000</pubDate>
+        <link>http://postops.co/2016/controlling-your-neato-botvac-with-ifttt/</link>
+        <guid isPermaLink="true">http://postops.co/2016/controlling-your-neato-botvac-with-ifttt/</guid>
+        
+        <category>terraform</category>
+        
+        <category>packer</category>
+        
+        <category>api</category>
+        
+        <category>iot</category>
+        
+        <category>botvac</category>
+        
+        <category>cats</category>
+        
+        
+        <category>iot</category>
+        
+        <category>terraform</category>
+        
+      </item>
+    
+  </channel>
+</rss>
