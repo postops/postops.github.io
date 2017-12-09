@@ -19,10 +19,13 @@ jobs:
           name: Jekyll Build
           command: 'jekyll build'
       - run:
-          name: Inspect directory
-          command: 'ls -lA'
+          name: Push up cross-post cache
+          command: './scripts/push_cache.sh'
 workflows:
   version: 2
   build:
     jobs:
-      - build
+      - build:
+        filters:
+          branches:
+            only: master
