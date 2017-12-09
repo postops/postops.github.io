@@ -6,6 +6,9 @@ baseurl: ''
 # google_analytics: 'UA-79833253-1'
 disqus_shortname: 'postops'
 
+jekyll-crosspost_to_medium:
+  text: "<p><i>This article was originally posted <a href=\"#{url}\" rel=\"canonical\">on postops</a>.</i></p>"
+
 author:
   name: 'Jay Wallace'
   twitter_username: mootpt

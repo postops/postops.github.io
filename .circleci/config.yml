@@ -18,7 +18,9 @@ jobs:
       - run:
           name: Jekyll Build
           command: 'jekyll build'
-
+      - run:
+          name: Inspect directory
+          command: 'ls -lA'
 workflows:
   version: 2
   build:
