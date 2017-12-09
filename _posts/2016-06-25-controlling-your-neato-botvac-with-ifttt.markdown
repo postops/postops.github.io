@@ -5,6 +5,7 @@ image: "http://www.postops.co/images/posts/botvac-post/this-has-gotta-stop.jpg"
 date: 2016-06-25 12:22:52
 categories: [iot,terraform]
 tags: [terraform,packer,api,iot,botvac,cats]
+crosspost_to_medium: true
 ---
 
 Natalie and I just recently moved into a new home and rather than move everything we decided it was about time to just up and replace most of our furniture. Along with some of the new furniture purchased, we agreed that we should invest in technology that would help automate our lives. It was quickly determined, that we both hate vacuuming. It doesn't take long for your floors to be covered in loose hair when you live with two cats and a dog, so we headed out to buy a robot vacuum the second day of living in the new home.

@@ -1,0 +1,26 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/postops
+    docker:
+      - image: ruby:latest
+    steps:
+      - checkout
+      - run:
+          name: Update apt-get
+          command: 'apt-get -y update'
+      - run:
+          name: Install nodejs
+          command: 'apt-get -y install nodejs'
+      - run:
+          name: Bundle install
+          command: 'bundle install'
+      - run:
+          name: Jekyll Build
+          command: 'bundler exec jekyll build'
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
